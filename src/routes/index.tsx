@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "motion/react";
-import { ArrowRight, Search, Sparkles, Package, MapPin } from "lucide-react";
+import { ArrowRight, Search, Package, MapPin, Clock } from "lucide-react";
 import { useState } from "react";
 import { Navbar } from "@/components/Navbar";
 import { ParticlesBg } from "@/components/ParticlesBg";
@@ -48,17 +48,14 @@ function Home() {
       <div className="relative z-10">
         <Navbar />
 
-        <section className="mx-auto max-w-4xl px-5 pt-16 pb-24 sm:px-8 sm:pt-24">
+        <section className="mx-auto max-w-4xl px-5 pt-24 pb-24 sm:px-8 sm:pt-32">
           <motion.div
             initial={{ opacity: 0, y: 24, filter: "blur(8px)" }}
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
             className="text-center"
           >
-            <span className="inline-flex items-center gap-2 rounded-full glass px-4 py-1.5 text-[10px] uppercase tracking-[0.35em] text-white/70">
-              <Sparkles className="h-3 w-3" /> Exclusivo Ropa Nova
-            </span>
-            <h1 className="mt-7 font-display text-[15vw] leading-[0.9] tracking-tight text-glow sm:text-[96px]">
+            <h1 className="font-display text-[15vw] leading-[0.9] tracking-tight text-glow sm:text-[96px]">
               ¿Dónde está
               <br />
               <span className="italic font-light">tu pedido?</span>
@@ -146,7 +143,7 @@ function Home() {
         </section>
 
         <footer className="border-t border-white/5 py-10 text-center text-[10px] uppercase tracking-[0.4em] text-white/40">
-          © {new Date().getFullYear()} Ropa Nova · Exclusivo
+          © {new Date().getFullYear()} Ropa Nova · Tienda #1 de Instagram
         </footer>
       </div>
     </div>
@@ -154,6 +151,18 @@ function Home() {
 }
 
 function OrderHeader({ order }: { order: any }) {
+  const formatUpdatedAt = (date: string) => {
+    if (!date) return null;
+    const d = new Date(date);
+    return d.toLocaleString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <div className="glass-strong rounded-3xl p-6 sm:p-8">
       <div className="flex flex-wrap items-start justify-between gap-6">
@@ -170,6 +179,11 @@ function OrderHeader({ order }: { order: any }) {
           <p className="mt-3 max-w-[260px] text-sm font-medium text-white">
             {order.current_status}
           </p>
+          {order.updated_at && (
+            <p className="mt-1 text-[10px] text-white/40">
+              Actualizado: {formatUpdatedAt(order.updated_at)}
+            </p>
+          )}
         </div>
       </div>
       <div className="mt-6 grid grid-cols-1 gap-4 border-t border-white/5 pt-6 sm:grid-cols-3">
@@ -180,7 +194,7 @@ function OrderHeader({ order }: { order: any }) {
           value={[order.city, order.country].filter(Boolean).join(", ") || "—"}
         />
         <Info
-          icon={Sparkles}
+          icon={Clock}
           label="Entrega estimada"
           value={order.estimated_delivery || "Por confirmar"}
         />

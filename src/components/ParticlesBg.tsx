@@ -1,6 +1,12 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useState } from "react";
 
 export function ParticlesBg() {
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const particles = useMemo(
     () =>
       Array.from({ length: 36 }, (_, i) => ({
@@ -13,6 +19,8 @@ export function ParticlesBg() {
       })),
     [],
   );
+
+  if (!mounted) return null;
 
   return (
     <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -27,7 +35,7 @@ export function ParticlesBg() {
             left: `${p.left}%`,
             width: p.size,
             height: p.size,
-            opacity: p.opacity,
+            opacity: 0,
             animation: `float-up ${p.duration}s linear ${p.delay}s infinite`,
             boxShadow: "0 0 6px rgba(255,255,255,0.6)",
           }}

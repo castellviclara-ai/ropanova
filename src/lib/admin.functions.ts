@@ -20,8 +20,8 @@ export const listOrders = createServerFn({ method: "POST" })
   .inputValidator((d: { token: string }) => d)
   .handler(async ({ data }) => {
     checkAuth(data.token);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: rows, error } = await supabaseAdmin
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data: rows, error } = await supabase
       .from("orders")
       .select("*")
       .order("created_at", { ascending: false });
@@ -33,13 +33,13 @@ export const getOrderWithEvents = createServerFn({ method: "POST" })
   .inputValidator((d: { token: string; orderId: string }) => d)
   .handler(async ({ data }) => {
     checkAuth(data.token);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: order } = await supabaseAdmin
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data: order } = await supabase
       .from("orders")
       .select("*")
       .eq("id", data.orderId)
       .maybeSingle();
-    const { data: events } = await supabaseAdmin
+    const { data: events } = await supabase
       .from("tracking_events")
       .select("*")
       .eq("order_id", data.orderId)
@@ -66,8 +66,8 @@ export const createOrder = createServerFn({ method: "POST" })
   .inputValidator((d: { token: string; order: OrderInput; initialStatuses: string[] }) => d)
   .handler(async ({ data }) => {
     checkAuth(data.token);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { data: o, error } = await supabaseAdmin
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { data: o, error } = await supabase
       .from("orders")
       .insert({
         ...data.order,
@@ -83,7 +83,7 @@ export const createOrder = createServerFn({ method: "POST" })
         position: i,
         completed: i === 0,
       }));
-      await supabaseAdmin.from("tracking_events").insert(events);
+      await supabase.from("tracking_events").insert(events);
     }
     return o;
   });
@@ -92,8 +92,11 @@ export const updateOrder = createServerFn({ method: "POST" })
   .inputValidator((d: { token: string; id: string; patch: Partial<OrderInput> }) => d)
   .handler(async ({ data }) => {
     checkAuth(data.token);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("orders").update(data.patch).eq("id", data.id);
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { error } = await supabase
+      .from("orders")
+      .update({ ...data.patch, updated_at: new Date().toISOString() })
+      .eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -102,8 +105,8 @@ export const deleteOrder = createServerFn({ method: "POST" })
   .inputValidator((d: { token: string; id: string }) => d)
   .handler(async ({ data }) => {
     checkAuth(data.token);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("orders").delete().eq("id", data.id);
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { error } = await supabase.from("orders").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -125,13 +128,18 @@ export const upsertEvent = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     checkAuth(data.token);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabase } = await import("@/integrations/supabase/client");
     if (data.event.id) {
       const { id, ...patch } = data.event;
-      const { error } = await supabaseAdmin.from("tracking_events").update(patch).eq("id", id);
+      const { error } = await supabase
+        .from("tracking_events")
+        .update(patch)
+        .eq("id", id);
       if (error) throw new Error(error.message);
     } else {
-      const { error } = await supabaseAdmin.from("tracking_events").insert(data.event);
+      const { error } = await supabase
+        .from("tracking_events")
+        .insert({ ...data.event, created_at: new Date().toISOString() });
       if (error) throw new Error(error.message);
     }
     return { ok: true };
@@ -141,8 +149,8 @@ export const deleteEvent = createServerFn({ method: "POST" })
   .inputValidator((d: { token: string; id: string }) => d)
   .handler(async ({ data }) => {
     checkAuth(data.token);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error } = await supabaseAdmin.from("tracking_events").delete().eq("id", data.id);
+    const { supabase } = await import("@/integrations/supabase/client");
+    const { error } = await supabase.from("tracking_events").delete().eq("id", data.id);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
@@ -151,9 +159,9 @@ export const setCurrentStatus = createServerFn({ method: "POST" })
   .inputValidator((d: { token: string; orderId: string; status: string; eventId: string }) => d)
   .handler(async ({ data }) => {
     checkAuth(data.token);
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { supabase } = await import("@/integrations/supabase/client");
     // mark all events up to and including this one as completed
-    const { data: evs } = await supabaseAdmin
+    const { data: evs } = await supabase
       .from("tracking_events")
       .select("id,position")
       .eq("order_id", data.orderId);
@@ -164,17 +172,17 @@ export const setCurrentStatus = createServerFn({ method: "POST" })
         .map((e) => e.id);
       const pendingIds = (evs ?? []).filter((e) => e.position > target.position).map((e) => e.id);
       if (completedIds.length)
-        await supabaseAdmin
+        await supabase
           .from("tracking_events")
           .update({ completed: true })
           .in("id", completedIds);
       if (pendingIds.length)
-        await supabaseAdmin
+        await supabase
           .from("tracking_events")
           .update({ completed: false })
           .in("id", pendingIds);
     }
-    await supabaseAdmin
+    await supabase
       .from("orders")
       .update({ current_status: data.status })
       .eq("id", data.orderId);

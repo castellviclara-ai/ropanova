@@ -28,7 +28,7 @@ function LoginPage() {
     try {
       const res = await login({ data: { username: u, password: p } });
       setAdminToken(res.token);
-      nav({ to: "/admin" });
+      window.location.href = "/admin";
     } catch (e: any) {
       setErr(e?.message ?? "Error");
     } finally {
