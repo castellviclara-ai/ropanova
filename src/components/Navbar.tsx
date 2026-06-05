@@ -12,7 +12,7 @@ export function Navbar() {
       transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
       className="z-40"
     >
-      <div className="mx-auto max-w-7xl px-6 py-6">
+      <div className="px-6 py-6">
         <div className="flex items-center justify-between">
           <motion.div
             whileHover={{ scale: 1.02 }}
